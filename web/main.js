@@ -75,8 +75,9 @@ function setState(next) {
   document.body.dataset.state = next;
   el.status.textContent = STATUS_TEXT[next] ?? '';
   el.mic.setAttribute('aria-pressed', String(next === 'listening'));
-  el.mic.disabled = next === 'translating';
-  const busy = next === 'listening' || next === 'translating';
+  el.mic.disabled = next === 'translating' || next === 'speaking';
+  const busy = next !== 'idle';
+  el.replay.disabled = busy;
   for (const button of el.phrases) button.disabled = busy;
   el.micLabel.textContent = next === 'listening' ? 'Stop listening' : 'Start listening';
 }
@@ -128,8 +129,11 @@ function listen(lang, onPartial) {
     };
 
     recognition.onresult = (event) => {
+      if (settled) return;
+      // Results are a cumulative snapshot; a final result can appear again.
+      transcript = '';
       let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+      for (let i = 0; i < event.results.length; i += 1) {
         const result = event.results[i];
         if (result.isFinal) transcript += result[0].transcript;
         else interim += result[0].transcript;
@@ -251,7 +255,7 @@ async function handleMic() {
     activeRecognition?.stop();
     return;
   }
-  if (state === 'translating') return;
+  if (state !== 'idle') return;
 
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
@@ -295,7 +299,7 @@ function renderPhrases() {
 
 /** Same flow as the mic, but the text is already known. */
 async function handlePhrase(event) {
-  if (state === 'listening' || state === 'translating') return;
+  if (state !== 'idle') return;
 
   const phrase = event.currentTarget.textContent.trim();
   if (!phrase) return;
@@ -318,7 +322,7 @@ async function handlePhrase(event) {
 }
 
 async function handleReplay() {
-  if (!lastResult || state === 'listening' || state === 'translating') return;
+  if (!lastResult || state !== 'idle') return;
   clearError();
   try {
     setState('speaking');
