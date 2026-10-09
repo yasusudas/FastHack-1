@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lilita+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
 
 /*
  * Ohkini! Bridge styles (Aya).
@@ -112,18 +112,14 @@ body {
   align-items: center;
   gap: 0.6rem;
   margin: 0.25rem 0 0;
-  font-family: 'Fredoka', var(--font);
-  font-size: 2.35rem;
-  font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: 0.01em;
-  /* sticker look: gradient letters + a hard pop shadow */
-  background: linear-gradient(100deg, var(--accent) 0%, #ff7a2f 38%, var(--gold) 70%, var(--teal) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  filter: drop-shadow(2px 3px 0 color-mix(in srgb, var(--navy) 85%, transparent));
+  font-family: 'Lilita One', var(--font);
+  font-size: 2.6rem;
+  font-weight: 400; /* Lilita One is a single, already-heavy weight */
+  line-height: 1;
+  letter-spacing: 0.02em;
+  /* pop sticker look: solid ink letters with a hard offset shadow */
+  color: var(--text);
+  text-shadow: 3px 3px 0 var(--gold);
   transform: rotate(-2deg);
   transform-origin: left center;
   width: fit-content;
@@ -136,7 +132,6 @@ body {
   height: 2.2rem;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 32' fill='none' stroke='%23d93a22' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 22 Q22 -6 39 22'/%3E%3Cpath d='M2 29 q5 -4 10 0 t10 0 t10 0 t10 0'/%3E%3C/svg%3E")
     center / contain no-repeat;
-  -webkit-text-fill-color: initial;
   animation: logo-bounce 2.4s ease-in-out infinite;
 }
 
