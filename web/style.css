@@ -736,3 +736,9 @@ body:has(#kansai-ben:checked) .panel:has(#translation) .panel__title::before {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Voice selection stays separate from the translation direction. */
+.voice-picker { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.6rem; margin: 1rem 0; font-size: 0.875rem; }
+.voice-picker select { max-width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #c8c8c8; border-radius: 0.75rem; background: #fff; color: #222; font: inherit; }
+.voice-picker select:focus-visible { outline: 2px solid #d64b28; outline-offset: 3px; }
+.voice-picker select:disabled { opacity: 0.6; }

@@ -60,6 +60,7 @@ const el = {
   translation: document.querySelector('#translation'),
   replay: document.querySelector('#replay'),
   kansai: document.querySelector('#kansai-ben'),
+  voice: document.querySelector('#voice-choice'),
   directions: document.querySelectorAll('input[name="direction"]'),
   phrases: [...document.querySelectorAll('.phrase')],
 };
@@ -78,6 +79,7 @@ function setState(next) {
   el.mic.disabled = next === 'translating' || next === 'speaking';
   const busy = next !== 'idle';
   el.replay.disabled = busy;
+  el.voice.disabled = busy;
   for (const button of el.phrases) button.disabled = busy;
   el.micLabel.textContent = next === 'listening' ? 'Stop listening' : 'Start listening';
 }
@@ -232,12 +234,12 @@ function stopPlayback() {
 }
 
 /** Fetch audio from the server-side speech proxy and play it. */
-function playFromService(text) {
+function playFromService(text, voice) {
   return new Promise((resolve, reject) => {
     fetch('/api/speech', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, voice }),
     })
       .then(async (res) => {
         if (!res.ok) {
@@ -326,7 +328,7 @@ async function speak(text, lang) {
   stopPlayback();
 
   try {
-    await playFromService(text);
+    await playFromService(text, el.voice.value || 'original');
   } catch (serviceError) {
     // Diagnostics belong in the console; the user just needs to hear the audio.
     console.warn(`Speech service unavailable, using the browser voice instead: ${serviceError.message}`);
@@ -488,6 +490,14 @@ for (const input of el.directions) {
     renderPhrases();
   });
 }
+
+try {
+  const savedVoice = localStorage.getItem('ookini-voice');
+  if (['original', 'tsuki'].includes(savedVoice)) el.voice.value = savedVoice;
+} catch {}
+el.voice.addEventListener('change', () => {
+  try { localStorage.setItem('ookini-voice', el.voice.value); } catch {}
+});
 
 renderPhrases();
 setState('idle');

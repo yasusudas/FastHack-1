@@ -14,7 +14,7 @@ app.get('/api/health', (_req, res) => {
 
 // POST /api/speech — proxy speech synthesis so the ElevenLabs API key stays server-side.
 app.post('/api/speech', async (req, res) => {
-  const { text } = req.body ?? {};
+  const { text, voice = 'original' } = req.body ?? {};
 
   if (typeof text !== 'string' || text.trim() === '') {
     return res.status(400).json({ error: 'text is required' });
@@ -26,13 +26,20 @@ app.post('/api/speech', async (req, res) => {
     return res.status(503).json({ error: 'ElevenLabs is not configured on the server' });
   }
 
+  if (!['original', 'tsuki'].includes(voice)) {
+    return res.status(400).json({ error: 'Unknown voice selection' });
+  }
+  const voiceId = voice === 'tsuki'
+    ? process.env.ELEVENLABS_FEMALE_VOICE_ID || 'IbNtK9ck5SyXyxyjqHEN'
+    : process.env.ELEVENLABS_VOICE_ID;
+
   const japanese = /[\u3040-\u30ff\u3400-\u9fff]/u.test(text);
   const spokenText = text.trim();
   const delivery = /[?？]/u.test(spokenText) ? '[curious][excited] ' : /[!！]/u.test(spokenText) ? '[excited] ' : '';
 
   try {
     const upstream = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(process.env.ELEVENLABS_VOICE_ID)}?output_format=mp3_44100_128`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
       {
         method: 'POST',
         headers: {
