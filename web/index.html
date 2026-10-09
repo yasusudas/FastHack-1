@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FastHack Translator</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>FastHack Translator</h1>
+
+      <form id="translate-form">
+        <textarea id="text" rows="4" placeholder="Enter text to translate" required></textarea>
+
+        <div class="row">
+          <label>
+            Direction
+            <select id="direction">
+              <option value="ja-en">Japanese → English</option>
+              <option value="en-ja">English → Japanese</option>
+            </select>
+          </label>
+
+          <label class="checkbox">
+            <input type="checkbox" id="kansai-ben" />
+            Kansai-ben
+          </label>
+        </div>
+
+        <button type="submit">Translate</button>
+      </form>
+
+      <pre id="output" aria-live="polite"></pre>
+    </main>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
