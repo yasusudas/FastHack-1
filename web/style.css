@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
 
 /*
- * 関西ブリッジ styles (Aya).
+ * Ohkini! Bridge styles (Aya).
  *
  * style.css only — index.html / main.js are untouched. main.js never writes
  * inline styles. It only flips these hooks:
@@ -103,16 +103,30 @@ body {
 }
 
 /*
- * Brand header. The markup says "FastHack Translator"; we hide that text and
- * draw 関西ブリッジ + the bridge logo with CSS so index.html stays untouched.
+ * Brand header: a chunky, bouncy "Ohkini! Bridge" sticker. The title is real
+ * text in the h1 (so screen readers and the tab title agree); the bridge logo
+ * is drawn with CSS.
  */
 .app__title {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin: 0;
-  font-size: 0; /* hides the original text node */
-  line-height: 1;
+  gap: 0.6rem;
+  margin: 0.25rem 0 0;
+  font-family: 'Fredoka', var(--font);
+  font-size: 2.35rem;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  /* sticker look: gradient letters + a hard pop shadow */
+  background: linear-gradient(100deg, var(--accent) 0%, #ff7a2f 38%, var(--gold) 70%, var(--teal) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(2px 3px 0 color-mix(in srgb, var(--navy) 85%, transparent));
+  transform: rotate(-2deg);
+  transform-origin: left center;
+  width: fit-content;
 }
 
 .app__title::before {
@@ -120,20 +134,44 @@ body {
   flex: none;
   width: 3rem;
   height: 2.2rem;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 32' fill='none' stroke='%23d93a22' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 22 Q22 -6 39 22'/%3E%3Cpath d='M2 29 q5 -4 10 0 t10 0 t10 0 t10 0'/%3E%3C/svg%3E")
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 32' fill='none' stroke='%23d93a22' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 22 Q22 -6 39 22'/%3E%3Cpath d='M2 29 q5 -4 10 0 t10 0 t10 0 t10 0'/%3E%3C/svg%3E")
     center / contain no-repeat;
+  -webkit-text-fill-color: initial;
+  animation: logo-bounce 2.4s ease-in-out infinite;
 }
 
 body:has(#kansai-ben:checked) .app__title::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 32' fill='none' stroke='%23f4b13a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 22 Q22 -6 39 22'/%3E%3Cpath d='M2 29 q5 -4 10 0 t10 0 t10 0 t10 0'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 32' fill='none' stroke='%23f4b13a' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 22 Q22 -6 39 22'/%3E%3Cpath d='M2 29 q5 -4 10 0 t10 0 t10 0 t10 0'/%3E%3C/svg%3E");
 }
 
-.app__title::after {
-  content: '関西ブリッジ';
-  font-size: 1.75rem;
+@keyframes logo-bounce {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-0.2rem) rotate(6deg);
+  }
+}
+
+/* tagline: a little pop sticker under the title */
+.app__subtitle {
+  align-self: flex-start;
+  margin: -0.25rem 0 0.25rem;
+  padding: 0.2rem 0.85rem;
+  font-size: 0.9rem;
   font-weight: 900;
-  letter-spacing: 0.04em;
-  color: var(--text);
+  color: #fff;
+  background: var(--navy);
+  border-radius: 999px;
+  transform: rotate(-1.5deg);
+  box-shadow: 2px 3px 0 color-mix(in srgb, var(--accent) 80%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  .app__subtitle {
+    color: #17110e;
+  }
 }
 
 /* ----------------------------------------------------------- controls */
