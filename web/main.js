@@ -16,6 +16,25 @@ const DIRECTIONS = {
   'ja-en': { source: 'ja-JP', target: 'en-US' },
 };
 
+// Quick phrases, in the source language for each direction. Index i in one
+// list is the same sentence as index i in the other.
+const PHRASES = {
+  'en-ja': [
+    'Where is the station?',
+    'This is delicious!',
+    'How much is this?',
+    'Thank you so much',
+    'Can you speak slowly?',
+  ],
+  'ja-en': [
+    '駅はどこですか？',
+    'これ、おいしい！',
+    'これはいくらですか？',
+    '本当にありがとう',
+    'ゆっくり話してもらえますか？',
+  ],
+};
+
 const STATUS_TEXT = {
   idle: 'Tap the mic and speak',
   listening: 'Listening… tap again to stop',
@@ -42,6 +61,7 @@ const el = {
   replay: document.querySelector('#replay'),
   kansai: document.querySelector('#kansai-ben'),
   directions: document.querySelectorAll('input[name="direction"]'),
+  phrases: [...document.querySelectorAll('.phrase')],
 };
 
 let state = 'idle';
@@ -56,6 +76,8 @@ function setState(next) {
   el.status.textContent = STATUS_TEXT[next] ?? '';
   el.mic.setAttribute('aria-pressed', String(next === 'listening'));
   el.mic.disabled = next === 'translating';
+  const busy = next === 'listening' || next === 'translating';
+  for (const button of el.phrases) button.disabled = busy;
   el.micLabel.textContent = next === 'listening' ? 'Stop listening' : 'Start listening';
 }
 
@@ -291,6 +313,39 @@ async function handleMic() {
   }
 }
 
+/** Relabel the quick phrases for whichever direction is selected. */
+function renderPhrases() {
+  const list = PHRASES[currentDirection()] ?? [];
+  el.phrases.forEach((button, i) => {
+    button.textContent = list[i] ?? '';
+    button.hidden = !list[i];
+  });
+}
+
+/** Same flow as the mic, but the text is already known. */
+async function handlePhrase(event) {
+  if (state === 'listening' || state === 'translating') return;
+
+  const phrase = event.currentTarget.textContent.trim();
+  if (!phrase) return;
+
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+  clearError();
+  el.transcript.textContent = phrase;
+  el.translation.textContent = '';
+  el.replay.hidden = true;
+  lastResult = null;
+
+  try {
+    await runTranslation(phrase, currentDirection());
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    setState('idle');
+  }
+}
+
 async function handleReplay() {
   if (!lastResult || state === 'listening' || state === 'translating') return;
   clearError();
@@ -309,10 +364,18 @@ async function handleReplay() {
 el.mic.addEventListener('click', handleMic);
 el.replay.addEventListener('click', handleReplay);
 
-for (const input of el.directions) {
-  input.addEventListener('change', clearError);
+for (const button of el.phrases) {
+  button.addEventListener('click', handlePhrase);
 }
 
+for (const input of el.directions) {
+  input.addEventListener('change', () => {
+    clearError();
+    renderPhrases();
+  });
+}
+
+renderPhrases();
 setState('idle');
 
 if (!SpeechRecognitionCtor) {
