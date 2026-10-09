@@ -187,39 +187,39 @@ function pickVoice(lang) {
 }
 
 /**
- * Read text aloud. Japanese uses a ja-JP voice when the device has one.
+ * Read text aloud through the server-side ElevenLabs proxy.
  * @param {string} text
  * @param {string} lang BCP-47 tag
  * @returns {Promise<void>}
  */
 function speak(text, lang) {
   return new Promise((resolve, reject) => {
-    if (!('speechSynthesis' in window)) {
-      reject(new Error('This browser cannot speak text aloud.'));
-      return;
-    }
     if (!text) {
       resolve();
       return;
     }
 
-    window.speechSynthesis.cancel(); // drop anything still queued
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
-
-    if (!voices.length) refreshVoices();
-    const voice = pickVoice(lang);
-    if (voice) utterance.voice = voice;
-
-    utterance.onend = () => resolve();
-    utterance.onerror = (event) => {
-      // Cancelling mid-sentence is a normal interruption, not a failure.
-      if (event.error === 'interrupted' || event.error === 'canceled') resolve();
-      else reject(new Error(`Playback failed (${event.error}).`));
-    };
-
-    window.speechSynthesis.speak(utterance);
+    fetch('/api/speech', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, lang }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error ?? `Speech failed (${res.status}).`);
+        }
+        return res.blob();
+      })
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        const cleanup = () => URL.revokeObjectURL(url);
+        audio.onended = () => { cleanup(); resolve(); };
+        audio.onerror = () => { cleanup(); reject(new Error('Audio playback failed.')); };
+        audio.play().catch((err) => { cleanup(); reject(new Error(`Audio playback failed: ${err.message}`)); });
+      })
+      .catch(reject);
   });
 }
 

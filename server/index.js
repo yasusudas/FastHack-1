@@ -12,6 +12,57 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
 
+// POST /api/speech — proxy speech synthesis so the ElevenLabs API key stays server-side.
+app.post('/api/speech', async (req, res) => {
+  const { text } = req.body ?? {};
+
+  if (typeof text !== 'string' || text.trim() === '') {
+    return res.status(400).json({ error: 'text is required' });
+  }
+  if (text.length > 4000) {
+    return res.status(400).json({ error: 'text must be 4000 characters or fewer' });
+  }
+  if (!process.env.ELEVENLABS_API_KEY || !process.env.ELEVENLABS_VOICE_ID) {
+    return res.status(503).json({ error: 'ElevenLabs is not configured on the server' });
+  }
+
+  try {
+    const upstream = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(process.env.ELEVENLABS_VOICE_ID)}?output_format=mp3_44100_128`,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'xi-api-key': process.env.ELEVENLABS_API_KEY,
+        },
+        signal: AbortSignal.timeout(30_000),
+        body: JSON.stringify({
+          text: text.trim(),
+          model_id: process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2',
+        }),
+      },
+    );
+
+    if (!upstream.ok) {
+      console.error(`ElevenLabs API returned HTTP ${upstream.status}`);
+      if (upstream.status === 429) {
+        return res.status(429).json({ error: 'Speech limit reached. Please try again shortly.' });
+      }
+      return res.status(502).json({ error: 'Speech service request failed.' });
+    }
+
+    res.set('Content-Type', 'audio/mpeg');
+    res.set('Cache-Control', 'no-store');
+    return res.send(Buffer.from(await upstream.arrayBuffer()));
+  } catch (error) {
+    if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+      return res.status(504).json({ error: 'Speech request timed out. Please try again.' });
+    }
+    console.error('ElevenLabs API request failed:', error?.message || 'unknown error');
+    return res.status(502).json({ error: 'Speech service is unavailable.' });
+  }
+});
+
 // POST /api/translate
 // body: { text: string, direction: 'ja-en' | 'en-ja', kansaiBen?: boolean }
 // response: { translation: string }
