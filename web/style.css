@@ -103,16 +103,28 @@ body {
 }
 
 /*
- * Brand header. The markup says "FastHack Translator"; we hide that text and
- * draw 関西ブリッジ + the bridge logo with CSS so index.html stays untouched.
+ * Brand header. The app name comes from index.html (<h1>), so renaming it
+ * there needs no CSS change; the bridge logo is drawn here.
  */
 .app__title {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin: 0;
-  font-size: 0; /* hides the original text node */
-  line-height: 1;
+  font-size: 1.75rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.app__subtitle {
+  margin: -0.6rem 0 0;
+  padding-left: 3.75rem; /* sits under the title text, past the logo */
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: var(--muted);
 }
 
 .app__title::before {
@@ -126,14 +138,6 @@ body {
 
 body:has(#kansai-ben:checked) .app__title::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 32' fill='none' stroke='%23f4b13a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 22 Q22 -6 39 22'/%3E%3Cpath d='M2 29 q5 -4 10 0 t10 0 t10 0 t10 0'/%3E%3C/svg%3E");
-}
-
-.app__title::after {
-  content: '関西ブリッジ';
-  font-size: 1.75rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  color: var(--text);
 }
 
 /* ----------------------------------------------------------- controls */
@@ -302,10 +306,13 @@ body[data-state='speaking'] {
 }
 
 .mic__icon {
-  width: 2.8rem;
-  height: 2.8rem;
+  width: 3rem;
+  height: 3rem;
   fill: currentColor;
   stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.25));
 }
 
 /* ripples while listening */
@@ -551,13 +558,27 @@ body[data-state='translating'] .panel:has(#translation) .panel__body:empty::afte
   content: ' ・ よく使う一言';
 }
 
+/* one scrollable row; bleeds to the screen edges so the cut-off chip hints at more */
 .phrases__row {
   display: flex;
-  flex-wrap: wrap;
   gap: 0.5rem;
+  overflow-x: auto;
+  margin-inline: -1rem;
+  padding: 0.2rem 1rem 0.4rem;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 1rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.phrases__row::-webkit-scrollbar {
+  display: none;
 }
 
 .phrase {
+  flex: none;
+  white-space: nowrap;
+  scroll-snap-align: start;
   min-height: 2.75rem;
   padding: 0.4rem 1rem;
   font-size: 0.9rem;
@@ -619,6 +640,46 @@ body:has(#kansai-ben:checked) .panel:has(#translation) .panel__title::before {
   .app {
     justify-content: center;
     gap: 1.25rem;
+  }
+}
+
+/* direction pill and Kansai-ben switch always share one row */
+.controls {
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  padding-inline: 0.75rem;
+}
+
+.direction__option span {
+  padding-inline: 0.8rem;
+  font-size: 0.9rem;
+}
+
+.kansai {
+  flex: none;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+/* show just 関西弁 (the HTML text "Kansai-ben" is collapsed) */
+.kansai span {
+  font-size: 0;
+}
+
+.kansai span::before {
+  content: '関西弁';
+  font-size: 0.95rem;
+}
+
+/* very narrow phones (320px) */
+@media (max-width: 22rem) {
+  .controls {
+    padding-inline: 0.6rem;
+  }
+
+  .direction__option span {
+    padding-inline: 0.6rem;
+    font-size: 0.85rem;
   }
 }
 
