@@ -28,7 +28,7 @@ app.post('/api/speech', async (req, res) => {
 
   const japanese = /[\u3040-\u30ff\u3400-\u9fff]/u.test(text);
   const spokenText = text.trim();
-  const delivery = /[?？]/u.test(spokenText) ? '[curious] ' : /[!！]/u.test(spokenText) ? '[excited] ' : '';
+  const delivery = /[?？]/u.test(spokenText) ? '[curious][excited] ' : /[!！]/u.test(spokenText) ? '[excited] ' : '';
 
   try {
     const upstream = await fetch(
@@ -47,7 +47,7 @@ app.post('/api/speech', async (req, res) => {
             : process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2',
           ...(japanese ? {
             language_code: 'ja',
-            voice_settings: { stability: 0.5, similarity_boost: 0.65, style: 0, use_speaker_boost: false },
+            voice_settings: { stability: 0, similarity_boost: 0.65, style: 0.3, use_speaker_boost: false },
           } : {}),
         }),
       },
