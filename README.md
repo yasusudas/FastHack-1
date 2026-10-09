@@ -1,6 +1,6 @@
 # FastHack Translator
 
-英語・日本語の音声翻訳アプリ。関西弁モードでは、翻訳文も自然な関西弁にします。
+英語・日本語の音声翻訳アプリ。関西弁モード（既定でオン）では、英語を自然な関西弁に訳します。翻訳プロンプトは `server/index.js` の `KANSAI_OUTPUT_GUIDE`（ルール）と `KANSAI_EXAMPLES`（例文）で調整できます。
 
 ## 起動
 

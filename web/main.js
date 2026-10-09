@@ -160,39 +160,12 @@ function listen(lang, onPartial) {
 
 /* ---------------------------------------------------------------- speak */
 
-let voices = [];
-
-function refreshVoices() {
-  if (!('speechSynthesis' in window)) return;
-  voices = window.speechSynthesis.getVoices();
-}
-
-if ('speechSynthesis' in window) {
-  refreshVoices();
-  window.speechSynthesis.addEventListener('voiceschanged', refreshVoices);
-}
-
-/** Pick the best installed voice for a language, preferring an exact match. */
-function pickVoice(lang) {
-  const wanted = lang.toLowerCase();
-  const base = wanted.split('-')[0];
-  const normalise = (voice) => voice.lang.replace('_', '-').toLowerCase();
-
-  return (
-    voices.find((voice) => normalise(voice) === wanted) ??
-    voices.find((voice) => normalise(voice).startsWith(`${base}-`)) ??
-    voices.find((voice) => normalise(voice) === base) ??
-    null
-  );
-}
-
 /**
  * Read text aloud through the server-side ElevenLabs proxy.
  * @param {string} text
- * @param {string} lang BCP-47 tag
  * @returns {Promise<void>}
  */
-function speak(text, lang) {
+function speak(text) {
   return new Promise((resolve, reject) => {
     if (!text) {
       resolve();
@@ -202,7 +175,7 @@ function speak(text, lang) {
     fetch('/api/speech', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, lang }),
+    body: JSON.stringify({ text }),
     })
       .then(async (res) => {
         if (!res.ok) {
@@ -258,18 +231,16 @@ async function translate(text, direction, kansaiBen) {
 /* ----------------------------------------------------------------- flow */
 
 async function runTranslation(transcript, direction) {
-  const { target } = DIRECTIONS[direction];
-
   setState('translating');
   const translation = await translate(transcript, direction, el.kansai.checked);
 
   el.translation.textContent = translation;
-  lastResult = { text: translation, lang: target };
+  lastResult = { text: translation };
   el.replay.hidden = false;
 
   try {
     setState('speaking');
-    await speak(translation, target);
+    await speak(translation);
   } catch (err) {
     showError(err.message); // the translation is on screen; playback is a bonus
   }
@@ -351,7 +322,7 @@ async function handleReplay() {
   clearError();
   try {
     setState('speaking');
-    await speak(lastResult.text, lastResult.lang);
+    await speak(lastResult.text);
   } catch (err) {
     showError(err.message);
   } finally {
