@@ -540,6 +540,50 @@ body[data-state='translating'] .panel:has(#translation) .panel__body:empty::afte
   transform: scale(0.96);
 }
 
+/* quick phrases: light tappable chips */
+.phrases {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.phrases .panel__title::after {
+  content: ' ・ よく使う一言';
+}
+
+.phrases__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.phrase {
+  min-height: 2.75rem;
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  transition: transform 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.phrase:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.phrase:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.phrase:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
 /* 関西弁 mode: golden translation card + badge */
 body:has(#kansai-ben:checked) .panel:has(#translation) {
   border-left-color: var(--gold);
