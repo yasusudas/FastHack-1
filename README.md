@@ -4,7 +4,7 @@
 
 ## 起動
 
-1. `server/.env.example` を `server/.env` にコピーし、`ANTHROPIC_API_KEY` を設定します。`server/.env` は `.gitignore` 対象です。
+1. `server/.env.example` を `server/.env` にコピーし、`ANTHROPIC_API_KEY`、`ELEVENLABS_API_KEY`、`ELEVENLABS_VOICE_ID` を設定します。`server/.env` は `.gitignore` 対象です。
 2. APIサーバーを起動します。
 
    ```bash
@@ -21,7 +21,11 @@
    npm run dev
    ```
 
-Chromeで http://localhost:5173 を開きます。Viteが `/api/translate` をExpressの `/translate` に転送します。
+Chromeで http://localhost:5173 を開きます。Viteは `/api/translate` をExpressへパスを保って転送します。Vercelでは同じパスをサービスrewriteがExpressへ渡します。
+
+VercelのProject Settingsにも `ANTHROPIC_API_KEY`、`ELEVENLABS_API_KEY`、`ELEVENLABS_VOICE_ID` を設定してください。ローカルの `server/.env` はデプロイには含まれません。
+
+音声再生は `/api/speech` を経由してElevenLabs APIで生成します。音声IDはElevenLabsの「声のIDをコピー」から取得してください。APIキーをブラウザへ公開しないよう、必ずサーバー環境変数に設定します。モデルは既定で `eleven_multilingual_v2` です。
 
 ## 翻訳API
 
@@ -39,7 +43,7 @@ Chromeで http://localhost:5173 を開きます。Viteが `/api/translate` をEx
 ## 動作確認
 
 ```bash
-curl -s http://localhost:3000/translate \
+curl -s http://localhost:3000/api/translate \
   -H 'Content-Type: application/json' \
   -d '{"text":"めっちゃええ天気やな","direction":"ja-en","kansaiBen":true}'
 ```
