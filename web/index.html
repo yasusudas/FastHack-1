@@ -2,36 +2,58 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f1115" />
     <title>FastHack Translator</title>
     <link rel="stylesheet" href="/style.css" />
   </head>
-  <body>
-    <main>
-      <h1>FastHack Translator</h1>
+  <body data-state="idle">
+    <main class="app">
+      <h1 class="app__title">FastHack Translator</h1>
 
-      <form id="translate-form">
-        <textarea id="text" rows="4" placeholder="Enter text to translate" required></textarea>
-
-        <div class="row">
-          <label>
-            Direction
-            <select id="direction">
-              <option value="ja-en">Japanese → English</option>
-              <option value="en-ja">English → Japanese</option>
-            </select>
+      <section class="controls">
+        <fieldset class="direction">
+          <legend class="sr-only">Translation direction</legend>
+          <label class="direction__option">
+            <input type="radio" name="direction" value="en-ja" checked />
+            <span>EN &rarr; JP</span>
           </label>
-
-          <label class="checkbox">
-            <input type="checkbox" id="kansai-ben" />
-            Kansai-ben
+          <label class="direction__option">
+            <input type="radio" name="direction" value="ja-en" />
+            <span>JP &rarr; EN</span>
           </label>
-        </div>
+        </fieldset>
 
-        <button type="submit">Translate</button>
-      </form>
+        <label class="kansai">
+          <input type="checkbox" id="kansai-ben" />
+          <span>Kansai-ben</span>
+        </label>
+      </section>
 
-      <pre id="output" aria-live="polite"></pre>
+      <section class="mic">
+        <button id="mic" class="mic__button" type="button" aria-pressed="false">
+          <svg class="mic__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z" />
+            <path d="M5 11v1a7 7 0 0 0 14 0v-1" fill="none" stroke-width="2" stroke-linecap="round" />
+            <path d="M12 19v2.5" fill="none" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <span class="sr-only" id="mic-label">Start listening</span>
+        </button>
+        <p class="status" id="status" role="status">Tap the mic and speak</p>
+      </section>
+
+      <p class="error" id="error" role="alert" hidden></p>
+
+      <section class="panel">
+        <h2 class="panel__title">Transcript</h2>
+        <output class="panel__body" id="transcript" for="mic"></output>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel__title">Translation</h2>
+        <output class="panel__body" id="translation" for="mic"></output>
+        <button class="panel__action" id="replay" type="button" hidden>Play again</button>
+      </section>
     </main>
 
     <script type="module" src="/main.js"></script>
