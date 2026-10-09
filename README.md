@@ -21,7 +21,9 @@
    npm run dev
    ```
 
-Chromeで http://localhost:5173 を開きます。Viteが `/api/translate` をExpressの `/translate` に転送します。
+Chromeで http://localhost:5173 を開きます。Viteは `/api/translate` をExpressへパスを保って転送します。Vercelでは同じパスをサービスrewriteがExpressへ渡します。
+
+VercelのProject Settingsにも `ANTHROPIC_API_KEY` を設定してください。ローカルの `server/.env` はデプロイには含まれません。
 
 ## 翻訳API
 
@@ -39,7 +41,7 @@ Chromeで http://localhost:5173 を開きます。Viteが `/api/translate` をEx
 ## 動作確認
 
 ```bash
-curl -s http://localhost:3000/translate \
+curl -s http://localhost:3000/api/translate \
   -H 'Content-Type: application/json' \
   -d '{"text":"めっちゃええ天気やな","direction":"ja-en","kansaiBen":true}'
 ```

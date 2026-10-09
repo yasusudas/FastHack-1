@@ -8,14 +8,14 @@ const PORT = Number(process.env.PORT) || 3000;
 app.use(cors());
 app.use(express.json({ limit: '32kb' }));
 
-app.get('/health', (_req, res) => {
+app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
 
-// POST /translate
+// POST /api/translate
 // body: { text: string, direction: 'ja-en' | 'en-ja', kansaiBen?: boolean }
 // response: { translation: string }
-app.post('/translate', async (req, res) => {
+app.post('/api/translate', async (req, res) => {
   const { text, direction = 'ja-en', kansaiBen = false } = req.body ?? {};
 
   if (typeof text !== 'string' || text.trim() === '') {

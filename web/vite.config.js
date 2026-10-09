@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
-// /api/* in the browser -> http://localhost:3000/* on the Express server,
-// so /api/translate reaches the server's POST /translate.
+// Local Vite dev: forward /api/* to Express without changing the path.
+// Production uses the top-level Vercel service rewrite for the same path.
 export default defineConfig({
   server: {
     port: 5173,
@@ -9,7 +9,6 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },
