@@ -164,8 +164,36 @@ function listen(lang, onPartial) {
 
 /* ---------------------------------------------------------------- speak */
 
-// How long to wait for service audio to actually begin before falling back.
 const PLAYBACK_START_TIMEOUT_MS = 8000;
+// Resume during the user gesture so Safari/Chrome can play the later response.
+let playbackContext = null;
+function preparePlayback() {
+  const Context = window.AudioContext || window.webkitAudioContext;
+  if (!Context) return;
+  try {
+    playbackContext ||= new Context();
+    playbackContext.resume().catch(() => {});
+  } catch { /* Audio element playback remains available. */ }
+}
+
+function connectClearPlayback(audio, text) {
+  if (!playbackContext || playbackContext.state !== 'running' || !/[\u3040-\u30ff\u3400-\u9fff]/u.test(text)) return () => {};
+  const source = playbackContext.createMediaElementSource(audio);
+  const body = playbackContext.createBiquadFilter();
+  body.type = 'peaking';
+  body.frequency.value = 300;
+  body.Q.value = 0.7;
+  body.gain.value = -3;
+  const clarity = playbackContext.createBiquadFilter();
+  clarity.type = 'highshelf';
+  clarity.frequency.value = 2500;
+  clarity.gain.value = 2;
+  const headroom = playbackContext.createGain();
+  headroom.gain.value = 0.8;
+  source.connect(body).connect(clarity).connect(headroom).connect(playbackContext.destination);
+  return () => { source.disconnect(); body.disconnect(); clarity.disconnect(); headroom.disconnect(); };
+}
+
 
 let voices = [];
 let activeAudio = null;
@@ -222,10 +250,16 @@ function playFromService(text) {
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         activeAudio = audio;
+        const disconnect = connectClearPlayback(audio, text);
+        let finished = false;
 
         let watchdog = null;
 
         const done = (finish, value) => {
+          if (finished) return;
+          finished = true;
+          audio.pause();
+          disconnect();
           clearTimeout(watchdog);
           URL.revokeObjectURL(url);
           if (activeAudio === audio) activeAudio = null;
@@ -361,6 +395,7 @@ async function handleMic() {
 
   stopPlayback();
 
+  preparePlayback();
   clearError();
   el.transcript.textContent = '';
   el.translation.textContent = '';
@@ -408,6 +443,7 @@ async function handlePhrase(event) {
 
   stopPlayback();
 
+  preparePlayback();
   clearError();
   el.transcript.textContent = phrase;
   el.translation.textContent = '';
@@ -425,6 +461,7 @@ async function handlePhrase(event) {
 
 async function handleReplay() {
   if (!lastResult || state !== 'idle') return;
+  preparePlayback();
   clearError();
   try {
     setState('speaking');

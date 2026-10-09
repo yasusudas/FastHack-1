@@ -26,6 +26,10 @@ app.post('/api/speech', async (req, res) => {
     return res.status(503).json({ error: 'ElevenLabs is not configured on the server' });
   }
 
+  const japanese = /[\u3040-\u30ff\u3400-\u9fff]/u.test(text);
+  const spokenText = text.trim();
+  const delivery = /[?？]/u.test(spokenText) ? '[curious] ' : /[!！]/u.test(spokenText) ? '[excited] ' : '';
+
   try {
     const upstream = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(process.env.ELEVENLABS_VOICE_ID)}?output_format=mp3_44100_128`,
@@ -37,8 +41,14 @@ app.post('/api/speech', async (req, res) => {
         },
         signal: AbortSignal.timeout(30_000),
         body: JSON.stringify({
-          text: text.trim(),
-          model_id: process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2',
+          text: japanese ? delivery + spokenText : spokenText,
+          model_id: japanese
+            ? process.env.ELEVENLABS_EXPRESSIVE_MODEL || 'eleven_v3'
+            : process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2',
+          ...(japanese ? {
+            language_code: 'ja',
+            voice_settings: { stability: 0.5, similarity_boost: 0.65, style: 0, use_speaker_boost: false },
+          } : {}),
         }),
       },
     );
