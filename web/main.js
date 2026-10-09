@@ -164,22 +164,52 @@ function listen(lang, onPartial) {
 
 /* ---------------------------------------------------------------- speak */
 
-/**
- * Read text aloud through the server-side ElevenLabs proxy.
- * @param {string} text
- * @returns {Promise<void>}
- */
-function speak(text) {
-  return new Promise((resolve, reject) => {
-    if (!text) {
-      resolve();
-      return;
-    }
+// How long to wait for service audio to actually begin before falling back.
+const PLAYBACK_START_TIMEOUT_MS = 8000;
 
+let voices = [];
+let activeAudio = null;
+
+function refreshVoices() {
+  if (!('speechSynthesis' in window)) return;
+  voices = window.speechSynthesis.getVoices();
+}
+
+if ('speechSynthesis' in window) {
+  refreshVoices();
+  window.speechSynthesis.addEventListener('voiceschanged', refreshVoices);
+}
+
+/** Pick the best installed voice for a language, preferring an exact match. */
+function pickVoice(lang) {
+  const wanted = lang.toLowerCase();
+  const base = wanted.split('-')[0];
+  const normalise = (voice) => voice.lang.replace('_', '-').toLowerCase();
+
+  return (
+    voices.find((voice) => normalise(voice) === wanted) ??
+    voices.find((voice) => normalise(voice).startsWith(`${base}-`)) ??
+    voices.find((voice) => normalise(voice) === base) ??
+    null
+  );
+}
+
+/** Silence whatever is currently playing, from either source. */
+function stopPlayback() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  if (activeAudio) {
+    activeAudio.pause();
+    activeAudio = null;
+  }
+}
+
+/** Fetch audio from the server-side speech proxy and play it. */
+function playFromService(text) {
+  return new Promise((resolve, reject) => {
     fetch('/api/speech', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
+      body: JSON.stringify({ text }),
     })
       .then(async (res) => {
         if (!res.ok) {
@@ -191,13 +221,83 @@ function speak(text) {
       .then((blob) => {
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
-        const cleanup = () => URL.revokeObjectURL(url);
-        audio.onended = () => { cleanup(); resolve(); };
-        audio.onerror = () => { cleanup(); reject(new Error('Audio playback failed.')); };
-        audio.play().catch((err) => { cleanup(); reject(new Error(`Audio playback failed: ${err.message}`)); });
+        activeAudio = audio;
+
+        let watchdog = null;
+
+        const done = (finish, value) => {
+          clearTimeout(watchdog);
+          URL.revokeObjectURL(url);
+          if (activeAudio === audio) activeAudio = null;
+          finish(value);
+        };
+
+        // A clip that never starts is just a silent failure. Give up on it so
+        // the browser voice can take over rather than leaving the user with
+        // nothing to hear.
+        watchdog = setTimeout(() => {
+          audio.pause();
+          done(reject, new Error('Audio did not start playing.'));
+        }, PLAYBACK_START_TIMEOUT_MS);
+
+        audio.onplaying = () => clearTimeout(watchdog);
+        audio.onended = () => done(resolve);
+        audio.onerror = () => done(reject, new Error('Audio playback failed.'));
+        audio.play().catch((err) => done(reject, new Error(`Audio playback failed: ${err.message}`)));
       })
       .catch(reject);
   });
+}
+
+/** Speak with the browser's own voices — ja-JP for Japanese, en-US for English. */
+function speakWithBrowser(text, lang) {
+  return new Promise((resolve, reject) => {
+    if (!('speechSynthesis' in window)) {
+      reject(new Error('This browser cannot speak text aloud.'));
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+
+    if (!voices.length) refreshVoices();
+    const voice = pickVoice(lang);
+    if (voice) utterance.voice = voice;
+
+    utterance.onend = () => resolve();
+    utterance.onerror = (event) => {
+      // Cancelling mid-sentence is a normal interruption, not a failure.
+      if (event.error === 'interrupted' || event.error === 'canceled') resolve();
+      else reject(new Error(`Playback failed (${event.error}).`));
+    };
+
+    window.speechSynthesis.speak(utterance);
+  });
+}
+
+/**
+ * Read text aloud. Tries the server speech service first; if that fails for
+ * any reason — not configured, rate limited, timed out, or the audio refusing
+ * to play — it falls back to the browser's built-in voices, so audio always
+ * plays.
+ * @param {string} text
+ * @param {string} lang BCP-47 tag for the fallback voice, "ja-JP" or "en-US"
+ * @returns {Promise<void>}
+ */
+async function speak(text, lang) {
+  if (!text) return;
+
+  stopPlayback();
+
+  try {
+    await playFromService(text);
+  } catch (serviceError) {
+    // Diagnostics belong in the console; the user just needs to hear the audio.
+    console.warn(`Speech service unavailable, using the browser voice instead: ${serviceError.message}`);
+    await speakWithBrowser(text, lang || 'en-US');
+  }
 }
 
 /* ------------------------------------------------------------ translate */
@@ -235,16 +335,18 @@ async function translate(text, direction, kansaiBen) {
 /* ----------------------------------------------------------------- flow */
 
 async function runTranslation(transcript, direction) {
+  const { target } = DIRECTIONS[direction];
+
   setState('translating');
   const translation = await translate(transcript, direction, el.kansai.checked);
 
   el.translation.textContent = translation;
-  lastResult = { text: translation };
+  lastResult = { text: translation, lang: target };
   el.replay.hidden = false;
 
   try {
     setState('speaking');
-    await speak(translation);
+    await speak(translation, target);
   } catch (err) {
     showError(err.message); // the translation is on screen; playback is a bonus
   }
@@ -257,7 +359,7 @@ async function handleMic() {
   }
   if (state !== 'idle') return;
 
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  stopPlayback();
 
   clearError();
   el.transcript.textContent = '';
@@ -304,7 +406,7 @@ async function handlePhrase(event) {
   const phrase = event.currentTarget.textContent.trim();
   if (!phrase) return;
 
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  stopPlayback();
 
   clearError();
   el.transcript.textContent = phrase;
@@ -326,7 +428,7 @@ async function handleReplay() {
   clearError();
   try {
     setState('speaking');
-    await speak(lastResult.text);
+    await speak(lastResult.text, lastResult.lang);
   } catch (err) {
     showError(err.message);
   } finally {
